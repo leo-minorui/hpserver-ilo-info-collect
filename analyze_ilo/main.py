@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-sys.path.append('/opt')
+
+sys.path.append('/tmp/pycharm_project_836/database')
+sys.path.append(os.path.abspath(os.path.dirname(__file__)+'/'+'..'))
 import cx_Oracle
 import hpilo
 import database.login_database as db
@@ -19,7 +21,7 @@ lock = threading.Lock()
 #time_info = (time.strftime('%Y-%m-%d %H:%M:%S',time.localtime()))
 time_info = time.localtime()
 q = Queue.Queue()
-def input_account(login,password,time_info,ip):
+def input_account(login,password,ip):
     param = {'LOGIN_USERS': login, 'LOGIN_PWD': password,  'ILO_IP': ip}
     connection = cx_Oracle.connect('gl_sm/gl_sm@10.195.227.244/db244d')
     with connection.cursor() as cursor:
@@ -27,7 +29,7 @@ def input_account(login,password,time_info,ip):
                        'where ILO_IP=:ILO_IP', param)
     connection.commit()
     connection.close()
-def test(id, ip, new):
+def test(id, ip, new, site):
 
    # ilo = hpilo.Ilo(ip, login='admin', password='dpbgty123.')
 
@@ -38,36 +40,49 @@ def test(id, ip, new):
     # password = base64.b64encode(b"ping.p.shen@foxconn.com")
     # input_account(login, password, time_info, ip)
     # 多线程测试
-    try:
-       # ilo = hpilo.Ilo(ip, login='admin', password='Idpbg123.')
-        ilo = hpilo.Ilo(ip, login='MonitorTools', password='ping.p.shen@foxconn.com')
-        #admin
-        ilo.get_product_name()
-        #login = base64.b64encode(b"MonitorTools")
-        #password = base64.b64encode(b"ping.p.shen@foxconn.com")
-        #input_account(login,password,time_info,ip)
+    if site == 'GL':
+       try:
+           # ilo = hpilo.Ilo(ip, login='admin', password='Idpbg123.')
+           ilo = hpilo.Ilo(ip, login='MonitorTools', password='ping.p.shen@foxconn.com')
+           # admin
+           ilo.get_product_name()
+           # login = base64.b64encode(b"MonitorTools")
+           # password = base64.b64encode(b"ping.p.shen@foxconn.com")
+           # input_account(login,password,time_info,ip)
+       except:
+           try:
+               ilo = hpilo.Ilo(ip, login='admin', password='iL0!@#123')
+               ilo.get_product_name()
+           except:
+               print(ip, "connect failed")
+               return
 
-    except :
+    elif site == 'ZZ':
         try:
             ilo = hpilo.Ilo(ip, login='admin', password='Idpbg123.')
             ilo.get_product_name()
-            #login = base64.b64encode(b"admin")
-           # password = base64.b64encode(b"Idpbg123.")
-            #input_account(login, password, time_info, ip)
-        except :
+        except:
             try:
-                ilo = hpilo.Ilo(ip, login='admin',password='dpbg123.')
+                ilo = hpilo.Ilo(ip, login='MonitorTools', password='ping.p.shen@foxconn.com')
+                # admin
                 ilo.get_product_name()
-                #login = base64.b64encode(b"admin")
-               # password = base64.b64encode(b"dpbg123.")
-                #input_account(login, password, time_info, ip)
-            except :
-                try:
-                    ilo = hpilo.Ilo(ip, login='admin', password='dpbgty123.')
-                    ilo.get_product_name()
-                except:
-                    print(ip,"den登录失败")
-                    return
+            except:
+                print(ip, "connect failed")
+                return
+    elif site == 'TY':
+        try:
+            ilo = hpilo.Ilo(ip, login='admin', password='dpbgty123.')
+            ilo.get_product_name()
+        except:
+            try:
+                ilo = hpilo.Ilo(ip, login='MonitorTools', password='ping.p.shen@foxconn.com')
+                # admin
+                ilo.get_product_name()
+            except:
+                print(ip, "connect failed")
+                return
+
+
 
     server_name = ilo.get_server_name()  #获取主机名
     product_name = ilo.get_product_name()  # 获取产品型号
@@ -331,12 +346,13 @@ if __name__ == '__main__':
 
     num_threads = 200
     threads = []
-    sql = "select HARDWARE_ID,IP_ILO,CHECK_NEW,IP_ILO_STATUS from ILO_INFO where SITE='TY'"
-   # # sql = '''   select site_code_id,ip_ilo,count(ip_ilo) as num
-   #                  from itim_auto.ITIM_ASSETS@itim_auto_pitimdb where CATEGORY_ID='服務器'
-   #                  and ASSETS_STATUS_ID in ('正式','在用','備用','測試') and assets_model like 'HP%'
-   #                  group by site_code_id,ip_ilo having count(ip_ilo)=1
-   #            '''
+    sql = "select HARDWARE_ID,IP_ILO,CHECK_NEW,IP_ILO_STATUS,SITE from ILO_INFO"
+    # sql ='''
+    #           select site_code_id,ip_ilo,count(ip_ilo) as num
+    #           from itim_auto.ITIM_ASSETS@itim_auto_pitimdb where CATEGORY_ID='服務器'
+    #           and ASSETS_STATUS_ID in ('正式','在用','備用','測試') and assets_model like 'HP%'
+    #           group by site_code_id,ip_ilo having count(ip_ilo)=1
+    #      '''
     g = db.connection_database(sql)
     start = time.clock()
     def base(g):
@@ -344,11 +360,11 @@ if __name__ == '__main__':
 
             try:
                 lock.acquire()
-                id, ip, new,status= g.next()
+                id, ip, new, status, site = g.next()
                 lock.release()
                 print(ip)
                 if status == '1':
-                    test(id,ip.strip(),new)
+                    test(id, ip.strip(), new, site)
             except StopIteration:
                 lock.release()
                 break

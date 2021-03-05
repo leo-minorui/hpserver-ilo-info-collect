@@ -2,15 +2,20 @@
 #网段扫描
 import subprocess
 import threading
-
+import sys
+reload(sys)
+sys.setdefaultencoding( "utf-8" )
+import os
+os.environ["NLS_LANG"] = ".AL32UTF8"
 import nmap
 import cx_Oracle
-import queue
+import Queue
 import time
+
 num_threads = 200
 num_threads1 = 200
-q = queue.Queue()
-p = queue.Queue()
+q = Queue.Queue()
+p = Queue.Queue()
 addlock = threading.Lock()
 strr1 = 'HP Integrated Lights-Out mpSSH'
 strr2 = "AllegroSoft RomSShell sshd"
@@ -27,6 +32,7 @@ def connect_oracle(IP,judge):
         print(type(IP),status)
         with connection.cursor() as cursor:
             cursor.execute('update ILO_INFO set PING_IP=:PING_IP where IP_ILO=:IP_ILO', param)
+
         connection.commit()
         connection.close()
     else:
@@ -35,6 +41,7 @@ def connect_oracle(IP,judge):
         param = {'PING_IP': status, 'IP_ILO': IP}
         with connection.cursor() as cursor:
             cursor.execute('update GL_SM.ILO_INFO set PING_IP=:PING_IP where IP_ILO=:IP_ILO', param)
+
         connection.commit()
         connection.close()
 
@@ -44,7 +51,7 @@ def Ping_all():
     while not q.empty():
         ip = q.get()
         q.task_done()
-        res = subprocess.call('ping -n 2 -w 5 %s' % '{0}'.format(ip), stdout=subprocess.PIPE)
+        res = subprocess.call('ping -c 2 -W 5 %s' % '{0}'.format(ip), stdout=subprocess.PIPE,shell=True)
         with addlock:
             if res == 0:
                 print(ip,"------>该IP使用中")
@@ -55,6 +62,7 @@ def Ping_all():
                 print(ip,"------>该IP闲置中")
                 print(res)
                 connect_oracle(ip,res)
+
 
 def judge_ilo():
     print("----------------开始扫描指定IP--------------------")
@@ -91,6 +99,7 @@ def judge_ilo():
                 connection.close()
 
 def update_info(ip,site):
+
     connection = cx_Oracle.connect('gl_sm/gl_sm@10.195.227.244/db244d')
     param = {
         "IP_ILO":ip , "SITE": site
@@ -100,25 +109,27 @@ def update_info(ip,site):
             cursor.execute('INSERT into ILO_INFO(IP_ILO,SITE) values (:IP_ILO,:SITE)',param)
         except:
             print('unique value')
+
     connection.commit()
     connection.close()
 
 
 
 if __name__ == '__main__':
-
+    start = time.clock()
     #sql1 = 'SELECT IP_ILO FROM GL_SM.ILO_INFO where IP_ILO=:IP_ILO'
-    sql = '''   select site_code_id,ip_ilo,count(ip_ilo) as num
-                from itim_auto.ITIM_ASSETS@itim_auto_pitimdb where CATEGORY_ID='服務器'
-                and ASSETS_STATUS_ID in ('正式','在用','備用','測試') and assets_model like 'HP%'
+    sql = u'''  select site_code_id,ip_ilo,count(ip_ilo) as num 
+                from itim_auto.ITIM_ASSETS@itim_auto_pitimdb where CATEGORY_ID='服務器' 
+                and ASSETS_STATUS_ID in ('正式','在用','備用','測試') and assets_model like 'HP%' 
                 group by site_code_id,ip_ilo having count(ip_ilo)=1      
           '''
     connection = cx_Oracle.connect('gl_sm/gl_sm@10.195.227.244/db244d')
     with connection.cursor() as cursor:
-       hah1 = cursor.execute(sql)
+       hah1 = cursor.execute(sql.encode('utf-8'))
       # file = open("IP.txt", 'r')
        for i in hah1:
            ip = str(i[1]).lstrip('(').rstrip(")").strip(",")
+           print(ip)
            site = i[0]
            try:
                update_info(ip,site)
@@ -137,9 +148,13 @@ if __name__ == '__main__':
         thread = threading.Thread(target=Ping_all, args=())
         thread.start()
         threads.append(thread)
+
     for thread in threads: thread.join()
 
     for j in range(num_threads1):
         threading.Thread(target=judge_ilo, args=()).start()
     judge_ilo()
+    end = time.clock()
+    print(end - start)
+
 
