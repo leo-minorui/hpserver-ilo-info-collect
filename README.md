@@ -4,7 +4,7 @@
 
 ## 1.目录结构
 
-![未命名截图](C:\Users\f1237282\Desktop\未命名截图.png)
+![未命名截图1](C:\Users\f1237282\Desktop\未命名截图1.png)
 
 `Batch_DLL` 文件目录实现批量修改账号，ntp设置等功能
 
@@ -194,7 +194,7 @@ def get_log_info(ilo):
 
 
 
-## 5.实现功能
+## 6.实现功能
 
 `/Batch_DLL/change_account.py`
 
@@ -220,3 +220,8 @@ ilo.mod_network_settings(sntp_server1='10.172.113.1',sntp_server2='10.173.173.16
 **ilo3以上的server除了账号密码不清楚外的都有收集到信息**
 
 ![未命名截图](C:\Users\f1237282\Desktop\未命名截图.png)
+
+## 7.未实现功能
+
+目前HBA卡 和 阵列卡电池信息无法获得
+
