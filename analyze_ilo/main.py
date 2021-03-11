@@ -31,24 +31,12 @@ def input_account(login,password,ip):
     connection.close()
 def test(id, ip, new, site):
 
-   # ilo = hpilo.Ilo(ip, login='admin', password='dpbgty123.')
 
-
-
-    # ilo.get_product_name()
-    # login = base64.b64encode(b"MonitorTools")
-    # password = base64.b64encode(b"ping.p.shen@foxconn.com")
-    # input_account(login, password, time_info, ip)
-    # 多线程测试
     if site == 'GL':
        try:
-           # ilo = hpilo.Ilo(ip, login='admin', password='Idpbg123.')
            ilo = hpilo.Ilo(ip, login='MonitorTools', password='ping.p.shen@foxconn.com')
            # admin
            ilo.get_product_name()
-           # login = base64.b64encode(b"MonitorTools")
-           # password = base64.b64encode(b"ping.p.shen@foxconn.com")
-           # input_account(login,password,time_info,ip)
        except:
            try:
                ilo = hpilo.Ilo(ip, login='admin', password='iL0!@#123')
